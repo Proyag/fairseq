@@ -1225,8 +1225,9 @@ def _freeze_and_mask_linears(
     freeze=True,
 ):
     # Freeze
-    for m in model.modules():
-        m.requires_grad_(False)
+    if freeze:
+        for m in model.modules():
+            m.requires_grad_(False)
     # Mask linears
     for child_name, child in model.named_children():
         if isinstance(child, torch.nn.Linear) and child_name not in exclude:
