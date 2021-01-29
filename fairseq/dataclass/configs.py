@@ -516,6 +516,16 @@ class CheckpointConfig(FairseqDataclass):
             "help": "finetune from a pretrained model; note that meters and lr scheduler will be reset"
         },
     )
+    masked_finetune: Optional[bool] = field(
+        default=False,
+        metadata={"help": "finetune by freezing parameters and training masks for linear layers"
+        },
+    )
+    masked_finetune_threshold: Optional[float] = field(
+        default=-float('inf'),
+        metadata={"help": "threshold for the mask binarizer"
+        }
+    )
     reset_dataloader: bool = field(
         default=False,
         metadata={

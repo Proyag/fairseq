@@ -14,6 +14,7 @@ import time
 from argparse import Namespace
 from itertools import chain
 from typing import Any, Dict, List
+from collections import OrderedDict
 
 import torch
 from fairseq import checkpoint_utils, distributed_utils, models, optim, utils
@@ -23,6 +24,7 @@ from fairseq.file_io import PathManager
 from fairseq.logging import meters, metrics
 from fairseq.nan_detector import NanDetector
 from fairseq.optim import lr_scheduler
+from fairseq.modules.masked_linear import MaskedLinear
 
 
 logger = logging.getLogger(__name__)
@@ -285,6 +287,8 @@ class Trainer(object):
         reset_lr_scheduler=False,
         optimizer_overrides=None,
         reset_meters=False,
+        mask_linears=False,
+        masking_threshold=-float('inf'),
     ):
         """
         Load all training state from a checkpoint file.
@@ -350,6 +354,13 @@ class Trainer(object):
                 )
             extra_state = state["extra_state"]
             self._optim_history = state["optimizer_history"]
+
+        if mask_linears:
+            _freeze_and_mask_linears(
+                self.get_model(),
+                masking_threshold=masking_threshold,
+                exclude={"output_projection"}
+            )
 
         if last_optim_state is not None and not reset_optimizer:
             # rebuild optimizer after loading model, since params may have changed
@@ -1205,3 +1216,29 @@ def _set_module_by_path(module, path, value):
     for name in path[:-1]:
         module = getattr(module, name)
     setattr(module, path[-1], value)
+
+
+def _freeze_and_mask_linears(
+    model,
+    masking_threshold,
+    exclude={},
+    freeze=True,
+):
+    # Freeze
+    for m in model.modules():
+        m.requires_grad_(False)
+    # Mask linears
+    for child_name, child in model.named_children():
+        if isinstance(child, torch.nn.Linear) and child_name not in exclude:
+            setattr(
+                model,
+                child_name,
+                MaskedLinear.build_from_linear(child, masking_threshold)
+            )
+        else:
+            # Recurse on submodules
+            _freeze_and_mask_linears(
+                child,
+                masking_threshold=masking_threshold,
+                exclude=exclude,
+            )

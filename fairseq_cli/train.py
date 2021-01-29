@@ -13,6 +13,7 @@ import math
 import os
 import sys
 from typing import Dict, Optional, Any, List, Tuple, Callable
+from collections import OrderedDict
 
 import numpy as np
 import torch
@@ -119,6 +120,32 @@ def main(cfg: DictConfig) -> None:
         # don't cache epoch iterators for sharded datasets
         disable_iterator_cache=task.has_sharded_data("train"),
     )
+
+    if cfg.checkpoint.masked_finetune:
+        logger.info(
+            "Training parameters: {}".format(
+                [name for name, p in OrderedDict(trainer.get_model().named_parameters()).items() if p.requires_grad]
+            )
+        )
+        logger.info(
+            "Freezing parameters: {}".format(
+                [name for name, p in OrderedDict(trainer.get_model().named_parameters()).items() if not p.requires_grad]
+            )
+        )
+        logger.info(
+            "num. model params: {:,} (num. trained: {:,})".format(
+                sum(p.numel() for p in trainer.get_model().parameters()),
+                sum(p.numel() for p in trainer.get_model().parameters() if p.requires_grad),
+            )
+        )
+        mask_ones = sum(torch.ge(p, cfg.checkpoint.masked_finetune_threshold).sum().item() for namep, p in trainer.get_model().named_parameters() if namep.endswith(".mask"))
+        total_mask_params = sum(p.numel() for np, p in trainer.get_model().named_parameters() if np.endswith(".mask"))
+        sparsity = 100 - (mask_ones * 100 / total_mask_params)
+        logger.info(
+            "Initial average sparsity of masks: {} / {} = {:.2f}%".format(
+                mask_ones, total_mask_params, sparsity
+            )
+        )
 
     max_epoch = cfg.optimization.max_epoch or math.inf
     lr = trainer.get_lr()

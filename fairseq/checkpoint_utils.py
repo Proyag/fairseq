@@ -21,6 +21,7 @@ from fairseq.dataclass.utils import (
 )
 from fairseq.file_io import PathManager
 from fairseq.models import FairseqDecoder, FairseqEncoder
+from fairseq.trainer import _freeze_and_mask_linears
 from omegaconf import DictConfig, open_dict
 
 
@@ -156,6 +157,10 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
             "--finetune-from-model can not be set together with either --reset-optimizer"
             " or reset_lr_scheduler or reset_meters or reset_dataloader"
         )
+    if cfg.finetune_from_model is None and cfg.masked_finetune:
+        raise ValueError(
+            "--finetune-from-model has to be set to use --masked-finetune"
+        )
 
     suffix = cfg.checkpoint_suffix
     if (
@@ -199,6 +204,8 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
         reset_lr_scheduler,
         optimizer_overrides,
         reset_meters=reset_meters,
+        mask_linears=cfg.masked_finetune,
+        masking_threshold=cfg.masked_finetune_threshold,
     )
 
     if (
@@ -351,6 +358,13 @@ def load_model_ensemble_and_task(
 
             # build model for ensemble
             model = task.build_model(cfg.model)
+            if cfg.checkpoint.masked_finetune:
+                _freeze_and_mask_linears(
+                    model,
+                    cfg.checkpoint.masked_finetune_threshold,
+                    exclude={"output_projection"},
+                    freeze=False
+                )
 
             model.load_state_dict(state["model"], strict=strict, model_cfg=cfg.model)
 
