@@ -780,9 +780,11 @@ def freeze_and_mask_linears(
 
     exclude_encoder_layers = eval_str_list(mask_exclude_encoder_layers, type=int)
     exclude_decoder_layers = eval_str_list(mask_exclude_decoder_layers, type=int)
-    for l in exclude_encoder_layers:
-        exclude_layers.add("encoder.layers.{:d}".format(l))
-    for l in exclude_decoder_layers:
-        exclude_layers.add("decoder.layers.{:d}".format(l))
+    if exclude_encoder_layers is not None:
+        for l in exclude_encoder_layers:
+            exclude_layers.add("encoder.layers.{:d}".format(l))
+    if exclude_decoder_layers is not None:
+        for l in exclude_decoder_layers:
+            exclude_layers.add("decoder.layers.{:d}".format(l))
 
     mask_linears(model, masking_threshold, exclude=exclude_layers)
