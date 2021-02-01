@@ -122,8 +122,6 @@ def main(cfg: DictConfig) -> None:
         disable_iterator_cache=task.has_sharded_data("train"),
     )
 
-    sys.exit(0)
-
     if cfg.masking.masked_finetune:
         logger.info(
             "Training parameters: {}".format(
