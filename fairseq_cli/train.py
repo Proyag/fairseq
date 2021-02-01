@@ -116,12 +116,15 @@ def main(cfg: DictConfig) -> None:
     # corresponding train iterator
     extra_state, epoch_itr = checkpoint_utils.load_checkpoint(
         cfg.checkpoint,
+        cfg.masking,
         trainer,
         # don't cache epoch iterators for sharded datasets
         disable_iterator_cache=task.has_sharded_data("train"),
     )
 
-    if cfg.checkpoint.masked_finetune:
+    sys.exit(0)
+
+    if cfg.masking.masked_finetune:
         logger.info(
             "Training parameters: {}".format(
                 [name for name, p in OrderedDict(trainer.get_model().named_parameters()).items() if p.requires_grad]
@@ -138,7 +141,7 @@ def main(cfg: DictConfig) -> None:
                 sum(p.numel() for p in trainer.get_model().parameters() if p.requires_grad),
             )
         )
-        mask_ones = sum(torch.ge(p, cfg.checkpoint.masked_finetune_threshold).sum().item() for namep, p in trainer.get_model().named_parameters() if namep.endswith(".mask"))
+        mask_ones = sum(torch.ge(p, cfg.masking.masked_finetune_threshold).sum().item() for namep, p in trainer.get_model().named_parameters() if namep.endswith(".mask"))
         total_mask_params = sum(p.numel() for np, p in trainer.get_model().named_parameters() if np.endswith(".mask"))
         sparsity = 100 - (mask_ones * 100 / total_mask_params)
         logger.info(

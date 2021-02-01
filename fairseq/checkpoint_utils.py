@@ -14,7 +14,7 @@ from collections import OrderedDict
 from typing import Any, Dict, Optional, Union
 
 import torch
-from fairseq.dataclass.configs import CheckpointConfig, FairseqConfig
+from fairseq.dataclass.configs import CheckpointConfig, FairseqConfig, MaskingConfig
 from fairseq.dataclass.utils import (
     convert_namespace_to_omegaconf,
     overwrite_args_by_name,
@@ -136,7 +136,7 @@ def save_checkpoint(cfg: CheckpointConfig, trainer, epoch_itr, val_loss):
                 os.remove(old_chk)
 
 
-def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
+def load_checkpoint(cfg: CheckpointConfig, mask_cfg: MaskingConfig, trainer, **passthrough_args):
     """
     Load a checkpoint and restore the training iterator.
 
@@ -157,7 +157,7 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
             "--finetune-from-model can not be set together with either --reset-optimizer"
             " or reset_lr_scheduler or reset_meters or reset_dataloader"
         )
-    if cfg.finetune_from_model is None and cfg.masked_finetune:
+    if cfg.finetune_from_model is None and mask_cfg.masked_finetune:
         raise ValueError(
             "--finetune-from-model has to be set to use --masked-finetune"
         )
@@ -204,8 +204,8 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
         reset_lr_scheduler,
         optimizer_overrides,
         reset_meters=reset_meters,
-        mask_linears=cfg.masked_finetune,
-        masking_threshold=cfg.masked_finetune_threshold,
+        mask_linears=mask_cfg.masked_finetune,
+        masking_threshold=mask_cfg.masked_finetune_threshold,
     )
 
     if (
@@ -358,10 +358,10 @@ def load_model_ensemble_and_task(
 
             # build model for ensemble
             model = task.build_model(cfg.model)
-            if "masked_finetune" in cfg.checkpoint.keys() and cfg.checkpoint.masked_finetune:
+            if "masked_finetune" in cfg.masking.keys() and cfg.masking.masked_finetune:
                 _freeze_and_mask_linears(
                     model,
-                    cfg.checkpoint.masked_finetune_threshold,
+                    cfg.masking.masked_finetune_threshold,
                     exclude={"output_projection"},
                     freeze=False
                 )

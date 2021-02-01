@@ -18,6 +18,7 @@ from fairseq.dataclass.configs import (
     EvalLMConfig,
     GenerationConfig,
     InteractiveConfig,
+    MaskingConfig,
     OptimizationConfig,
 )
 from fairseq.dataclass.utils import gen_parser_from_dataclass
@@ -39,6 +40,7 @@ def get_training_parser(default_task="translation"):
     add_model_args(parser)
     add_optimization_args(parser)
     add_checkpoint_args(parser)
+    add_masking_args(parser)
     return parser
 
 
@@ -318,6 +320,14 @@ def add_checkpoint_args(parser):
     group = parser.add_argument_group("checkpoint")
     # fmt: off
     gen_parser_from_dataclass(group, CheckpointConfig())
+    # fmt: on
+    return group
+
+
+def add_masking_args(parser):
+    group = parser.add_argument_group("masking")
+    # fmt: off
+    gen_parser_from_dataclass(group, MaskingConfig())
     # fmt: on
     return group
 

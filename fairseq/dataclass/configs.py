@@ -516,16 +516,6 @@ class CheckpointConfig(FairseqDataclass):
             "help": "finetune from a pretrained model; note that meters and lr scheduler will be reset"
         },
     )
-    masked_finetune: Optional[bool] = field(
-        default=False,
-        metadata={"help": "finetune by freezing parameters and training masks for linear layers"
-        },
-    )
-    masked_finetune_threshold: Optional[float] = field(
-        default=-float('inf'),
-        metadata={"help": "threshold for the mask binarizer"
-        }
-    )
     reset_dataloader: bool = field(
         default=False,
         metadata={
@@ -623,6 +613,20 @@ class CheckpointConfig(FairseqDataclass):
     )
     model_parallel_size: int = II("common.model_parallel_size")
     distributed_rank: int = II("distributed_training.distributed_rank")
+
+
+@dataclass
+class MaskingConfig(FairseqDataclass):
+    masked_finetune: bool = field(
+        default=False,
+        metadata={"help": "finetune by freezing parameters and training masks for linear layers"
+        },
+    )
+    masked_finetune_threshold: float = field(
+        default=-float('inf'),
+        metadata={"help": "threshold for the mask binarizer"
+        }
+    )
 
 
 @dataclass
@@ -925,6 +929,7 @@ class FairseqConfig(FairseqDataclass):
     dataset: DatasetConfig = DatasetConfig()
     optimization: OptimizationConfig = OptimizationConfig()
     checkpoint: CheckpointConfig = CheckpointConfig()
+    masking: MaskingConfig = MaskingConfig()
     bmuf: FairseqBMUFConfig = FairseqBMUFConfig()
     generation: GenerationConfig = GenerationConfig()
     eval_lm: EvalLMConfig = EvalLMConfig()
