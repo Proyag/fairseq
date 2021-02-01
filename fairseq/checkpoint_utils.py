@@ -21,7 +21,7 @@ from fairseq.dataclass.utils import (
 )
 from fairseq.file_io import PathManager
 from fairseq.models import FairseqDecoder, FairseqEncoder
-from fairseq.trainer import _freeze_and_mask_linears
+from fairseq.utils import freeze_and_mask_linears
 from omegaconf import DictConfig, open_dict
 
 
@@ -359,7 +359,7 @@ def load_model_ensemble_and_task(
             # build model for ensemble
             model = task.build_model(cfg.model)
             if "masked_finetune" in cfg.masking.keys() and cfg.masking.masked_finetune:
-                _freeze_and_mask_linears(
+                freeze_and_mask_linears(
                     model,
                     cfg.masking.masked_finetune_threshold,
                     exclude={"output_projection"},

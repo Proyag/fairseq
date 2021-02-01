@@ -22,6 +22,7 @@ from fairseq.file_io import PathManager
 from fairseq.logging.meters import safe_round
 from fairseq.modules import gelu, gelu_accurate
 from fairseq.modules.multihead_attention import MultiheadAttention
+from fairseq.modules.masked_linear import MaskedLinear
 from torch import Tensor
 
 
@@ -735,3 +736,29 @@ def eval_bool(x, default=False):
         return bool(eval(x))
     except TypeError:
         return default
+
+def freeze_and_mask_linears(
+    model,
+    masking_threshold,
+    exclude={},
+    freeze=True,
+):
+    # Freeze
+    if freeze:
+        for m in model.modules():
+            m.requires_grad_(False)
+    # Mask linears
+    for child_name, child in model.named_children():
+        if isinstance(child, torch.nn.Linear) and child_name not in exclude:
+            setattr(
+                model,
+                child_name,
+                MaskedLinear.build_from_linear(child, masking_threshold)
+            )
+        else:
+            # Recurse on submodules
+            freeze_and_mask_linears(
+                child,
+                masking_threshold=masking_threshold,
+                exclude=exclude,
+            )
