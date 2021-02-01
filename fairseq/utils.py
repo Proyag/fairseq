@@ -741,6 +741,8 @@ def freeze_and_mask_linears(
     model,
     masking_threshold,
     mask_output_layer=False,
+    mask_exclude_encoder_layers=None,
+    mask_exclude_decoder_layers=None,
     freeze=True,
 ):
     def mask_linears(model, threshold, exclude={}, parent=""):
@@ -770,8 +772,8 @@ def freeze_and_mask_linears(
         for m in model.modules():
             m.requires_grad_(False)
 
-    exclude_layers = {}
+    exclude_layers = set()
     if not mask_output_layer:
-        exclude_layers={"decoder.output_projection"}
+        exclude_layers.add("decoder.output_projection")
 
     mask_linears(model, masking_threshold, exclude=exclude_layers)
