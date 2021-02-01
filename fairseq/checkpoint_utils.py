@@ -200,12 +200,11 @@ def load_checkpoint(cfg: CheckpointConfig, mask_cfg: MaskingConfig, trainer, **p
 
     extra_state = trainer.load_checkpoint(
         checkpoint_path,
+        mask_cfg,
         reset_optimizer,
         reset_lr_scheduler,
         optimizer_overrides,
         reset_meters=reset_meters,
-        mask_linears=mask_cfg.masked_finetune,
-        masking_threshold=mask_cfg.masked_finetune_threshold,
     )
 
     if (
@@ -362,7 +361,7 @@ def load_model_ensemble_and_task(
                 freeze_and_mask_linears(
                     model,
                     cfg.masking.masked_finetune_threshold,
-                    exclude={"output_projection"},
+                    mask_output_layer=cfg.masking.mask_output_layer,
                     freeze=False
                 )
 

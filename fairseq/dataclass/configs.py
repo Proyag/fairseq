@@ -627,6 +627,10 @@ class MaskingConfig(FairseqDataclass):
         metadata={"help": "threshold for the mask binarizer"
         }
     )
+    mask_output_layer: bool = field(
+        default=False,
+        metadata={"help": "whether to mask the final output layer"}
+    )
 
 
 @dataclass

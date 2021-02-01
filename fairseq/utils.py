@@ -740,25 +740,33 @@ def eval_bool(x, default=False):
 def freeze_and_mask_linears(
     model,
     masking_threshold,
-    exclude={},
+    mask_output_layer=False,
     freeze=True,
 ):
+    def mask_linears(model, threshold, exclude={}):
+        # Mask linears
+        for child_name, child in model.named_children():
+            if isinstance(child, torch.nn.Linear) and child_name not in exclude:
+                setattr(
+                    model,
+                    child_name,
+                    MaskedLinear.build_from_linear(child, masking_threshold)
+                )
+            else:
+                # Recurse on submodules
+                mask_linears(
+                    child,
+                    threshold=threshold,
+                    exclude=exclude,
+                )
+
     # Freeze
     if freeze:
         for m in model.modules():
             m.requires_grad_(False)
-    # Mask linears
-    for child_name, child in model.named_children():
-        if isinstance(child, torch.nn.Linear) and child_name not in exclude:
-            setattr(
-                model,
-                child_name,
-                MaskedLinear.build_from_linear(child, masking_threshold)
-            )
-        else:
-            # Recurse on submodules
-            freeze_and_mask_linears(
-                child,
-                masking_threshold=masking_threshold,
-                exclude=exclude,
-            )
+
+    exclude_layers = {}
+    if not mask_output_layer:
+        exclude_layers={"output_projection"}
+
+    mask_linears(model, masking_threshold, exclude=exclude_layers)

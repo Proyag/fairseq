@@ -282,12 +282,11 @@ class Trainer(object):
     def load_checkpoint(
         self,
         filename,
+        mask_cfg,
         reset_optimizer=False,
         reset_lr_scheduler=False,
         optimizer_overrides=None,
         reset_meters=False,
-        mask_linears=False,
-        masking_threshold=-float('inf'),
     ):
         """
         Load all training state from a checkpoint file.
@@ -354,11 +353,11 @@ class Trainer(object):
             extra_state = state["extra_state"]
             self._optim_history = state["optimizer_history"]
 
-        if mask_linears:
+        if mask_cfg.masked_finetune:
             utils.freeze_and_mask_linears(
                 self.get_model(),
-                masking_threshold=masking_threshold,
-                exclude={"output_projection"}
+                masking_threshold=mask_cfg.masked_finetune_threshold,
+                mask_output_layer=mask_cfg.mask_output_layer
             )
 
         if last_optim_state is not None and not reset_optimizer:
