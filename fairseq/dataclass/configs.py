@@ -631,6 +631,14 @@ class MaskingConfig(FairseqDataclass):
         default=False,
         metadata={"help": "whether to mask the final output layer"}
     )
+    mask_exclude_encoder_layers: Optional[str] = field(
+        default=None,
+        metadata={"help": "encoder layers to exclude from masking (list of integers)"}
+    )
+    mask_exclude_decoder_layers: Optional[str] = field(
+        default=None,
+        metadata={"help": "decoder layers to exclude from masking (list of integers)"}
+    )
 
 
 @dataclass

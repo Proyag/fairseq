@@ -752,7 +752,9 @@ def freeze_and_mask_linears(
                 module_name = child_name
             else:
                 module_name = parent + '.' + child_name
-            if isinstance(child, torch.nn.Linear) and module_name not in exclude:
+            if module_name in exclude:
+                continue
+            if isinstance(child, torch.nn.Linear):
                 setattr(
                     model,
                     child_name,
@@ -775,5 +777,12 @@ def freeze_and_mask_linears(
     exclude_layers = set()
     if not mask_output_layer:
         exclude_layers.add("decoder.output_projection")
+
+    exclude_encoder_layers = eval_str_list(mask_exclude_encoder_layers, type=int)
+    exclude_decoder_layers = eval_str_list(mask_exclude_decoder_layers, type=int)
+    for l in exclude_encoder_layers:
+        exclude_layers.add("encoder.layers.{:d}".format(l))
+    for l in exclude_decoder_layers:
+        exclude_layers.add("decoder.layers.{:d}".format(l))
 
     mask_linears(model, masking_threshold, exclude=exclude_layers)

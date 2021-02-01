@@ -357,7 +357,9 @@ class Trainer(object):
             utils.freeze_and_mask_linears(
                 self.get_model(),
                 masking_threshold=mask_cfg.masked_finetune_threshold,
-                mask_output_layer=mask_cfg.mask_output_layer
+                mask_output_layer=mask_cfg.mask_output_layer,
+                mask_exclude_encoder_layers=mask_cfg.mask_exclude_encoder_layers,
+                mask_exclude_decoder_layers=mask_cfg.mask_exclude_decoder_layers,
             )
 
         if last_optim_state is not None and not reset_optimizer:
