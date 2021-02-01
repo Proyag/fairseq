@@ -358,7 +358,7 @@ def load_model_ensemble_and_task(
 
             # build model for ensemble
             model = task.build_model(cfg.model)
-            if cfg.checkpoint.masked_finetune:
+            if "masked_finetune" in cfg.checkpoint.keys() and cfg.checkpoint.masked_finetune:
                 _freeze_and_mask_linears(
                     model,
                     cfg.checkpoint.masked_finetune_threshold,
