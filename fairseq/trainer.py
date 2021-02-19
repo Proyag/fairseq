@@ -358,6 +358,7 @@ class Trainer(object):
                 self.get_model(),
                 masking_threshold=mask_cfg.masked_finetune_threshold,
                 mask_output_layer=mask_cfg.mask_output_layer,
+                mask_embedding=mask_cfg.mask_embedding,
                 mask_exclude_encoder_layers=mask_cfg.mask_exclude_encoder_layers,
                 mask_exclude_decoder_layers=mask_cfg.mask_exclude_decoder_layers,
             )

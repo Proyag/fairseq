@@ -22,7 +22,7 @@ from fairseq.file_io import PathManager
 from fairseq.logging.meters import safe_round
 from fairseq.modules import gelu, gelu_accurate
 from fairseq.modules.multihead_attention import MultiheadAttention
-from fairseq.modules.masked_linear import MaskedLinear
+from fairseq.modules.masked_linear import MaskedLinear, MaskedEmbedding
 from torch import Tensor
 
 
@@ -741,6 +741,7 @@ def freeze_and_mask_linears(
     model,
     masking_threshold,
     mask_output_layer=False,
+    mask_embedding=False,
     mask_exclude_encoder_layers=None,
     mask_exclude_decoder_layers=None,
     freeze=True,
@@ -760,6 +761,12 @@ def freeze_and_mask_linears(
                     child_name,
                     MaskedLinear.build_from_linear(child, masking_threshold)
                 )
+            elif isinstance(child, torch.nn.Embedding):
+                setattr(
+                    model,
+                    child_name,
+                    MaskedEmbedding.build_from_embedding(child, masking_threshold)
+                )
             else:
                 # Recurse on submodules
                 mask_linears(
@@ -777,6 +784,9 @@ def freeze_and_mask_linears(
     exclude_layers = set()
     if not mask_output_layer:
         exclude_layers.add("decoder.output_projection")
+    if not mask_embedding:
+        exclude_layers.add("encoder.embed_tokens")
+        exclude_layers.add("decoder.embed_tokens")
 
     exclude_encoder_layers = eval_str_list(mask_exclude_encoder_layers, type=int)
     exclude_decoder_layers = eval_str_list(mask_exclude_decoder_layers, type=int)

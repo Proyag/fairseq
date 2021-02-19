@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 import torch
 import torch.nn.functional as F
@@ -116,3 +116,90 @@ class MaskedLinear(nn.Linear):
         return 'in_features={}, out_features={}, bias={}, threshold={}'.format(
             self.in_features, self.out_features, self.bias is not None, self.threshold
         )
+
+
+class MaskedEmbedding(nn.Embedding):
+    r"""
+    Masked version of the Embedding layer.
+
+    The weights are masked according to a binary mask,
+    which is obtained by binarizing a real-valued trainable mask.
+
+    The binarizer is simply a thresholding function,
+    where the threshold is a hyperparameter.
+    """
+
+    def __init__(
+        self,
+        num_embeddings: int,
+        embedding_dim: int,
+        padding_idx: Optional[int] = None,
+        max_norm: Optional[float] = None,
+        norm_type: float = 2.,
+        scale_grad_by_freq: bool = False,
+        sparse: bool = False,
+        _weight: Optional[Tensor] = None,
+        threshold: float=0.0,
+    ) -> None:
+        super().__init__(num_embeddings,
+                         embedding_dim,
+                         padding_idx=padding_idx,
+                         max_norm=max_norm,
+                         norm_type=norm_type,
+                         scale_grad_by_freq=scale_grad_by_freq,
+                         sparse=sparse,
+                         _weight=_weight)
+        self.threshold = threshold
+        self.mask = Parameter(Tensor(num_embeddings, embedding_dim))
+        nn.init.uniform_(self.mask, -1, 1)
+
+    @classmethod
+    def build_from_embedding(
+        cls,
+        embedding: nn.Embedding,
+        threshold: float=0.0,
+    ):
+        e = cls(embedding.num_embeddings,
+                embedding.embedding_dim,
+                padding_idx=embedding.padding_idx,
+                max_norm=embedding.max_norm,
+                norm_type=embedding.norm_type,
+                scale_grad_by_freq=embedding.scale_grad_by_freq,
+                sparse=embedding.sparse,
+                _weight=embedding.weight,
+                threshold=threshold)
+        # e.weight = embedding.weight
+        e.weight.requires_grad_(embedding.weight.requires_grad)
+        e.to(embedding.weight.device)
+        return e
+
+    def forward(
+        self,
+        input_tensor: Tensor,
+    ) -> Tensor:
+        """Overrides Embedding.forward().
+        Masks the weights before the matrix multiplication.
+        """
+        mask_bin = Binarize.apply(self.mask, self.threshold)
+        return F.embedding(input_tensor,
+                           mask_bin * self.weight,
+                           self.padding_idx,
+                           self.max_norm,
+                           self.norm_type,
+                           self.scale_grad_by_freq,
+                           self.sparse)
+
+    def extra_repr(self) -> str:
+        s = '{num_embeddings}, {embedding_dim}'
+        if self.padding_idx is not None:
+            s += ', padding_idx={padding_idx}'
+        if self.max_norm is not None:
+            s += ', max_norm={max_norm}'
+        if self.norm_type != 2:
+            s += ', norm_type={norm_type}'
+        if self.scale_grad_by_freq is not False:
+            s += ', scale_grad_by_freq={scale_grad_by_freq}'
+        if self.sparse is not False:
+            s += ', sparse=True'
+        s += ', threshold={threshold}'
+        return s.format(**self.__dict__)

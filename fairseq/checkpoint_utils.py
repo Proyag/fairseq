@@ -362,6 +362,7 @@ def load_model_ensemble_and_task(
                     model,
                     cfg.masking.masked_finetune_threshold,
                     mask_output_layer=cfg.masking.mask_output_layer,
+                    mask_embedding=cfg.masking.mask_embedding,
                     mask_exclude_encoder_layers=cfg.masking.mask_exclude_encoder_layers,
                     mask_exclude_decoder_layers=cfg.masking.mask_exclude_decoder_layers,
                     freeze=False
