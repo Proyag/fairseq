@@ -59,12 +59,13 @@ class MegatronTrainer(Trainer):
     def load_checkpoint(
         self,
         filename,
+        mask_cfg,
         reset_optimizer=False,
         reset_lr_scheduler=False,
         optimizer_overrides=None,
         reset_meters=False,
     ):
-        extra_state = super().load_checkpoint(filename, reset_optimizer=reset_optimizer, reset_lr_scheduler=reset_lr_scheduler, optimizer_overrides=optimizer_overrides, reset_meters=reset_meters)
+        extra_state = super().load_checkpoint(filename, mask_cfg, reset_optimizer=reset_optimizer, reset_lr_scheduler=reset_lr_scheduler, optimizer_overrides=optimizer_overrides, reset_meters=reset_meters)
         if extra_state is not None and 'rng_tracker_states' in extra_state:
             get_cuda_rng_tracker().set_states(
                 extra_state['rng_tracker_states'])
